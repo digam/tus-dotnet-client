@@ -26,7 +26,7 @@ namespace TusClient
         //------------------------------------------------------------------------------------------------
 
         private CancellationTokenSource cancelSource = new CancellationTokenSource();
-        
+
         // ***********************************************************************************************
         // Public
         //------------------------------------------------------------------------------------------------
@@ -35,7 +35,7 @@ namespace TusClient
 
         public TusClient()
         {
-            
+
         }
 
         public void Cancel()
@@ -47,7 +47,7 @@ namespace TusClient
         {
             if (metadata == null)
             {
-                metadata = new Dictionary<string,string>();
+                metadata = new Dictionary<string, string>();
             }
             if (!metadata.ContainsKey("filename"))
             {
@@ -69,26 +69,26 @@ namespace TusClient
 
             if (metadata == null)
             {
-                metadata = new Dictionary<string,string>();
+                metadata = new Dictionary<string, string>();
             }
 
             var metadatastrings = new List<string>();
             foreach (var meta in metadata)
             {
-                string k = meta.Key.Replace(" ", "").Replace(",","");
+                string k = meta.Key.Replace(" ", "").Replace(",", "");
                 string v = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(meta.Value));
-                metadatastrings.Add(string.Format("{0} {1}", k, v ));
+                metadatastrings.Add(string.Format("{0} {1}", k, v));
             }
-            request.AddHeader("Upload-Metadata", string.Join(",",metadatastrings.ToArray()));
+            request.AddHeader("Upload-Metadata", string.Join(",", metadatastrings.ToArray()));
 
             var response = client.PerformRequest(request);
 
-            if (response.StatusCode == HttpStatusCode.Created)
+            if (response.StatusCode == HttpStatusCode.NoContent)
             {
                 if (response.Headers.ContainsKey("Location"))
                 {
                     Uri locationUri;
-                    if (Uri.TryCreate(response.Headers["Location"],UriKind.RelativeOrAbsolute,out locationUri ))
+                    if (Uri.TryCreate(response.Headers["Location"], UriKind.RelativeOrAbsolute, out locationUri))
                     {
                         if (!locationUri.IsAbsoluteUri)
                         {
@@ -106,11 +106,11 @@ namespace TusClient
                 {
                     throw new Exception("Location Header Missing");
                 }
-                
+
             }
             else
             {
-                throw new Exception("CreateFileInServer failed. " + response.ResponseString );
+                throw new Exception("CreateFileInServer failed. " + response.ResponseString);
             }
         }
         //------------------------------------------------------------------------------------------------
@@ -128,7 +128,7 @@ namespace TusClient
             var Offset = this.getFileOffset(URL);
             var client = new TusHTTPClient();
             System.Security.Cryptography.SHA1 sha = new System.Security.Cryptography.SHA1Managed();
-            int ChunkSize = (int) Math.Ceiling(3 * 1024.0 * 1024.0); //3 mb
+            int ChunkSize = (int)Math.Ceiling(3 * 1024.0 * 1024.0); //3 mb <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
             if (Offset == fs.Length)
             {
@@ -138,67 +138,67 @@ namespace TusClient
 
 
             while (Offset < fs.Length)
+            {
+                fs.Seek(Offset, SeekOrigin.Begin);
+                byte[] buffer = new byte[ChunkSize];
+                var BytesRead = fs.Read(buffer, 0, ChunkSize);
+
+                Array.Resize(ref buffer, BytesRead);
+                var sha1hash = sha.ComputeHash(buffer);
+
+                var request = new TusHTTPRequest(URL);
+                request.cancelToken = this.cancelSource.Token;
+                request.Method = "PATCH";
+                request.AddHeader("Tus-Resumable", "1.0.0");
+                request.AddHeader("Upload-Offset", string.Format("{0}", Offset));
+                request.AddHeader("Upload-Checksum", "sha1 " + Convert.ToBase64String(sha1hash));
+                request.AddHeader("Content-Type", "application/offset+octet-stream");
+                request.BodyBytes = buffer;
+
+                request.Uploading += delegate (long bytesTransferred, long bytesTotal)
                 {
-                    fs.Seek(Offset, SeekOrigin.Begin);
-                    byte[] buffer = new byte[ChunkSize];
-                    var BytesRead = fs.Read(buffer, 0, ChunkSize);
+                    if (Uploading != null)
+                        Uploading((long)Offset + bytesTransferred, (long)fs.Length);
+                };
 
-                    Array.Resize(ref buffer, BytesRead);
-                    var sha1hash = sha.ComputeHash(buffer);
+                try
+                {
+                    var response = client.PerformRequest(request);
 
-                    var request = new TusHTTPRequest(URL);
-                    request.cancelToken = this.cancelSource.Token;
-                    request.Method = "PATCH";
-                    request.AddHeader("Tus-Resumable", "1.0.0");
-                    request.AddHeader("Upload-Offset", string.Format("{0}", Offset));
-                    request.AddHeader("Upload-Checksum", "sha1 " + Convert.ToBase64String(sha1hash));
-                    request.AddHeader("Content-Type", "application/offset+octet-stream");
-                    request.BodyBytes = buffer;
-
-                    request.Uploading += delegate(long bytesTransferred, long bytesTotal)
+                    if (response.StatusCode == HttpStatusCode.NoContent)
                     {
-                        if (Uploading != null)
-                            Uploading((long)Offset + bytesTransferred, (long)fs.Length);
-                    };
-
-                    try
-                    {
-                        var response = client.PerformRequest(request);
-
-                        if (response.StatusCode == HttpStatusCode.NoContent)
-                        {
-                            Offset += BytesRead;
-                        }
-                        else
-                        {
-                            throw new Exception("WriteFileInServer failed. " + response.ResponseString);
-                        }
+                        Offset += BytesRead;
                     }
-                    catch (IOException ex)
+                    else
                     {
-                        if (ex.InnerException.GetType() == typeof(System.Net.Sockets.SocketException))
-                        {
-                            var socketex = (System.Net.Sockets.SocketException) ex.InnerException;
-                            if (socketex.SocketErrorCode == System.Net.Sockets.SocketError.ConnectionReset)
-                            {
-                                // retry by continuing the while loop but get new offset from server to prevent Conflict error
-                                Offset = this.getFileOffset(URL);
-                            }
-                            else
-                            {
-                                throw socketex;
-                            }                            
-                        }
-                        else
-                        {
-                            throw;
-                        }                        
+                        throw new Exception("WriteFileInServer failed. " + response.ResponseString);
                     }
-
-
-
                 }
-            
+                catch (IOException ex)
+                {
+                    if (ex.InnerException.GetType() == typeof(System.Net.Sockets.SocketException))
+                    {
+                        var socketex = (System.Net.Sockets.SocketException)ex.InnerException;
+                        if (socketex.SocketErrorCode == System.Net.Sockets.SocketError.ConnectionReset)
+                        {
+                            // retry by continuing the while loop but get new offset from server to prevent Conflict error
+                            Offset = this.getFileOffset(URL);
+                        }
+                        else
+                        {
+                            throw socketex;
+                        }
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
+
+
+
+            }
+
         }
         //------------------------------------------------------------------------------------------------
         public TusHTTPResponse Download(string URL)
@@ -209,7 +209,7 @@ namespace TusClient
             request.cancelToken = this.cancelSource.Token;
             request.Method = "GET";
 
-            request.Downloading += delegate(long bytesTransferred, long bytesTotal)
+            request.Downloading += delegate (long bytesTransferred, long bytesTotal)
             {
                 if (Downloading != null)
                     Downloading((long)bytesTransferred, (long)bytesTotal);
@@ -246,12 +246,11 @@ namespace TusClient
             public string SupportedVersions = "";
             public string Extensions = "";
             public long MaxSize = 0;
-            
-            public bool SupportsDelete
-            {
+
+            public bool SupportsDelete {
                 get { return this.Extensions.Contains("termination"); }
             }
-            
+
         }
 
         public TusServerInfo getServerInfo(string URL)
@@ -290,21 +289,23 @@ namespace TusClient
         //------------------------------------------------------------------------------------------------
         public bool Delete(string URL)
         {
-            var client = new TusHTTPClient();
-            var request = new TusHTTPRequest(URL);
-            request.Method = "DELETE";
-            request.AddHeader("Tus-Resumable", "1.0.0");
+            return false;
 
-            var response = client.PerformRequest(request);
+            //var client = new TusHTTPClient();
+            //var request = new TusHTTPRequest(URL);
+            //request.Method = "DELETE";
+            //request.AddHeader("Tus-Resumable", "1.0.0");
 
-            if (response.StatusCode == HttpStatusCode.NoContent || response.StatusCode == HttpStatusCode.NotFound || response.StatusCode == HttpStatusCode.Gone)
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
+            //var response = client.PerformRequest(request);
+
+            //if (response.StatusCode == HttpStatusCode.NoContent || response.StatusCode == HttpStatusCode.NotFound || response.StatusCode == HttpStatusCode.Gone)
+            //{
+            //    return true;
+            //}
+            //else
+            //{
+            //    return false;
+            //}
         }
         // ***********************************************************************************************
         // Internal

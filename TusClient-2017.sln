@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27428.1
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.28803.156
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{778DAE3C-4631-46EA-AA77-85C1314464D9}") = "TusClientConsole-2017", "TusClientConsole\TusClientConsole-2017.vbproj", "{0FAA23E6-9585-4EC5-A8FB-B0CE82F89735}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -9,6 +9,8 @@ Project("{778DAE3C-4631-46EA-AA77-85C1314464D9}") = "TusClientConsole-2017", "Tu
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TusClient-2017", "TusClient\TusClient-2017.csproj", "{1CF98267-059D-421C-8C4D-1A5B6D0DFD42}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TusClientNew", "TusClientNew\TusClientNew.csproj", "{509A4381-49AE-4D56-B8F9-39285C2FA0CE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -24,6 +26,10 @@ Global
 		{1CF98267-059D-421C-8C4D-1A5B6D0DFD42}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1CF98267-059D-421C-8C4D-1A5B6D0DFD42}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1CF98267-059D-421C-8C4D-1A5B6D0DFD42}.Release|Any CPU.Build.0 = Release|Any CPU
+		{509A4381-49AE-4D56-B8F9-39285C2FA0CE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{509A4381-49AE-4D56-B8F9-39285C2FA0CE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{509A4381-49AE-4D56-B8F9-39285C2FA0CE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{509A4381-49AE-4D56-B8F9-39285C2FA0CE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
